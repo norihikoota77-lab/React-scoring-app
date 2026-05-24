@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LoadingSpinner from "./components/LoadingSpinner";
 import Header from "./components/Header";
 import UploadCard from "./components/UploadCard";
 import ResultTable from "./components/ResultTable";
 import ScoreCard from "./components/ScoreCard";
 import ResultMessage from "./components/ResultMessage";
+import HistoryChart from "./components/HistoryChart";
+
+
 
 export default function App() {
 
@@ -15,6 +18,57 @@ export default function App() {
   const [loading, setLoading] = useState(false);
 
   const [result, setResult] = useState(null);
+
+  const [histories, setHistories] = useState([]);
+
+  const [selectedHistory, setSelectedHistory] = useState(null);
+
+  const fetchHistories = async () => {
+
+    try {
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/history/"
+      );
+
+      const data = await response.json();
+
+      setHistories(data);
+
+    } catch (error) {
+
+      console.error(error);
+
+    }
+  };
+
+  useEffect(() => {
+
+    fetchHistories();
+
+  }, []);
+
+  const deleteHistory = async (id) => {
+
+    try {
+
+      await fetch(
+
+        `http://127.0.0.1:8000/api/history/delete/${id}/`,
+        {
+          method: "DELETE",
+        }
+
+      );
+
+      fetchHistories();
+
+    } catch (error) {
+
+      console.error(error);
+
+    }
+  };
 
   const handleSubmit = async () => {
 
@@ -58,6 +112,7 @@ export default function App() {
       const data = JSON.parse(text);
 
       setResult(data);
+      fetchHistories();
 
       setCorrectFile(null);
       setUserFile(null);
@@ -101,6 +156,11 @@ export default function App() {
             {/* RESULT CARD */}
 
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl p-8 mt-8 text-white">
+ 
+              <HistoryChart
+                histories={histories}
+              />
+
               <h2 className="text-3xl font-extrabold mb-6">
 
                 採点結果
@@ -166,10 +226,163 @@ export default function App() {
               </div>
 
             )}
-
-            <ResultTable
-              rowsData={result.rows_data}
+            {result.rows_data && (
+              <ResultTable
+                rowsData={result.rows_data}
             />
+            )}
+            <div className="mt-10">
+
+              {selectedHistory && (
+
+                <div className="
+                  mb-8
+                  bg-red-500/10
+                  border
+                  border-red-400/30
+                  rounded-3xl
+                  p-6
+                ">
+
+                  <h2 className="text-2xl font-bold mb-4">
+
+                    履歴詳細
+
+                  </h2>
+
+                  <p className="text-5xl font-extrabold text-red-400 mb-3">
+
+                    {Number(selectedHistory.percentage).toFixed(1)}%
+
+                  </p>
+
+                  <p className="text-xl">
+
+                    ランク：
+                    {selectedHistory.rank}
+
+                  </p>
+
+                  <p className="mt-4 text-slate-300">
+
+                    {selectedHistory.message}
+
+                  </p>
+
+                </div>
+
+              )}
+
+              <h2 className="text-3xl font-bold mb-6">
+
+                採点履歴
+
+              </h2>
+
+              <a
+                href="http://127.0.0.1:8000/api/history/export/"
+                target="_blank"
+                rel="noreferrer"
+                className="
+                  inline-block
+                  mb-6
+                  bg-green-500
+                  hover:bg-green-600
+                  px-5
+                  py-3
+                  rounded-2xl
+                  font-bold
+                  transition
+                "
+              >
+
+                CSVダウンロード
+
+              </a>
+
+              <div className="grid md:grid-cols-2 gap-4">
+
+                {histories.map((history) => (
+
+                  <div
+                    key={history.id}
+                    onClick={() => setSelectedHistory(history)}
+                    className="
+                      bg-white/10
+                      border
+                      border-white/20
+                      rounded-2xl
+                      p-5
+                      backdrop-blur-lg
+                      hover:scale-105
+                      hover:border-red-400
+                      cursor-pointer
+                      transition
+                      duration-300
+                    "
+                  >
+
+                    <div className="flex justify-between mb-3">
+
+                      <p className="font-bold text-xl">
+
+                        {history.rank}
+
+                      </p>
+
+                      <p className="text-slate-300 text-sm">
+
+                        {history.created_at}
+
+                      </p>
+
+                    </div>
+
+                    <p className="text-2xl font-extrabold text-red-400 mb-2">
+
+                      {Number(history.percentage).toFixed(1)}%
+
+                    </p>
+
+                    <p className="text-slate-200">
+
+                      {history.message}
+
+                    </p>
+
+                    <button
+                      onClick={(e) => {
+
+                        e.stopPropagation();
+
+                        deleteHistory(history.id);
+
+                      }}
+                      className="
+                        mt-4
+                        bg-red-500
+                        hover:bg-red-600
+                        px-4
+                        py-2
+                        rounded-xl
+                        font-bold
+                        transition
+                      "
+                    >
+
+                      削除
+
+                    </button>
+
+
+
+                  </div>
+
+                ))}
+
+              </div>
+
+            </div>
 
           </>
 

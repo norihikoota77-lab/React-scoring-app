@@ -7,6 +7,15 @@ from django.conf.urls.static import static
 urlpatterns = [
     # TOP
     path("", views.index, name="index"),
+    path("api/history/", views.history_api, name="history_api"),
+    path(
+    "api/history/delete/<int:history_id>/",
+    views.delete_history_api
+    ),
+    path(
+        "api/history/export/",
+        views.export_history_csv
+    ),
 
     # Excelダウンロード
     path(

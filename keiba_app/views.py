@@ -12,6 +12,11 @@ from .forms import UploadForm
 from .scoring_engine import ScoringEngine
 from django.http import JsonResponse #★追加
 from django.views.decorators.csrf import csrf_exempt
+from .models import ScoreHistory
+from django.forms.models import model_to_dict
+import csv
+from django.http import HttpResponse
+from django.utils import timezone
 
 
 def index(request):
@@ -231,6 +236,14 @@ def score_api(request):
 
         msg, color = engine.get_result_message()
 
+        ScoreHistory.objects.create(
+            score=engine.score,
+            valid_count=engine.valid_count,
+            percentage=engine.percentage,
+            rank=engine.get_rank(),
+            message=msg,
+        ) 
+
         # スコアに応じた動画フォルダ
         if engine.percentage >= 80:
             folder_name = "excellent"
@@ -295,3 +308,105 @@ def score_api(request):
         if os.path.exists(u_temp.name):
             os.remove(u_temp.name)
 
+@csrf_exempt
+def history_api(request):
+
+    histories = ScoreHistory.objects.order_by(
+        "-created_at"
+    )[:20]
+
+    data = []
+
+    for history in histories:
+
+        data.append({
+            "id": history.id,
+            "score": history.score,
+            "valid_count": history.valid_count,
+            "percentage": history.percentage,
+            "rank": history.rank,
+            "message": history.message,
+            "rows_data": [],
+            "created_at": history.created_at.strftime("%Y-%m-%d %H:%M"),
+        })
+
+    return JsonResponse(data, safe=False)
+
+
+@csrf_exempt
+def delete_history_api(request, history_id):
+
+    if request.method != "DELETE":
+
+        return JsonResponse(
+            {"error": "DELETE only"},
+            status=400
+        )
+
+    try:
+
+        history = ScoreHistory.objects.get(
+            id=history_id
+        )
+
+        history.delete()
+
+        return JsonResponse({
+
+            "message": "deleted"
+
+        })
+
+    except ScoreHistory.DoesNotExist:
+
+        return JsonResponse(
+            {"error": "not found"},
+            status=404
+        )
+
+
+def export_history_csv(request):
+
+    histories = ScoreHistory.objects.all().order_by(
+        "-created_at"
+    )
+
+    response = HttpResponse(
+        content_type="text/csv; charset=utf-8-sig"
+    )
+
+    response.write('\ufeff')
+
+    response[
+        "Content-Disposition"
+    ] = 'attachment; filename="score_history.csv"'
+
+    writer = csv.writer(response)
+
+    writer.writerow([
+        "日時",
+        "スコア",
+        "正答率",
+        "ランク",
+        "メッセージ",
+    ])
+
+    for history in histories:
+
+        writer.writerow([
+
+            timezone.localtime(
+                history.created_at
+            ).strftime("%Y-%m-%d %H:%M:%S"),
+
+            history.score,
+
+            history.percentage,
+
+            history.rank,
+
+            history.message,
+
+        ])
+
+    return response
