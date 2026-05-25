@@ -56,13 +56,16 @@ def index(request):
                 except Exception as e:
                     pass
 
-                # ユーザーファイルのB13セルから名前を取得
+                # ユーザーファイルのB14セルから名前を取得
                 user_name = "名無し"
                 try:
                     wb_u = openpyxl.load_workbook(u_path, data_only=True)
                     ws_u = wb_u.active
-                    if ws_u['B13'].value:
-                        raw_name = str(ws_u['B13'].value)
+
+                    print(ws_u["B14"].value)
+
+                    if ws_u['B14'].value:
+                        raw_name = str(ws_u['B14'].value)
                         user_name = "".join(c for c in raw_name if c not in r'\/:*?"<>|')
                 except Exception as e:
                     pass
@@ -229,6 +232,47 @@ def score_api(request):
 
         engine = ScoringEngine()
 
+        user_name = "名無し"
+
+        exam_title = "問題"
+
+        try:
+
+            wb_c = openpyxl.load_workbook(
+                c_temp.name,
+                data_only=True
+            )
+
+            ws_c = wb_c.active
+
+            if ws_c["B13"].value:
+
+                exam_title = str(
+                    ws_c["B13"].value
+                )
+
+        except:
+            pass
+
+
+        try:
+
+            wb_u = openpyxl.load_workbook(
+                u_temp.name,
+                data_only=True
+            )
+
+            ws_u = wb_u.active
+
+            if ws_u["B14"].value:
+
+                user_name = str(
+                    ws_u["B14"].value
+                )
+
+        except:
+            pass
+
         engine.grade(
             c_temp.name,
             u_temp.name
@@ -243,6 +287,8 @@ def score_api(request):
             rank=engine.get_rank(),
             message=msg,
             rows_data=engine.rows_data,
+            user_name=user_name,
+            exam_title=exam_title,
         ) 
 
         # スコアに応じた動画フォルダ
@@ -290,7 +336,9 @@ def score_api(request):
             "rank": engine.get_rank(),
             "msg": msg,
             "rows_data": engine.rows_data,
-            "video_file": video_file
+            "video_file": video_file,       
+            "user_name": user_name,
+            "exam_title": exam_title,
 
         })
 
@@ -329,6 +377,12 @@ def history_api(request):
             "message": history.message,
             "rows_data": history.rows_data,
             "created_at": history.created_at.strftime("%Y-%m-%d %H:%M"),
+            "user_name": history.user_name,
+            "exam_title": history.exam_title,
+            "created_at": timezone.localtime(
+                history.created_at
+            ).strftime("%Y-%m-%d %H:%M"),
+
         })
 
     return JsonResponse(data, safe=False)

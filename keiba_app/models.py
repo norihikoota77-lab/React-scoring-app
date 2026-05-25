@@ -15,5 +15,19 @@ class ScoreHistory(models.Model):
 
     message = models.TextField()
 
+    rows_data = models.JSONField(default=list)  
+
+    user_name = models.CharField(
+        max_length=100,
+        default=""
+    )
+
+    exam_title = models.CharField(
+        max_length=200,
+        default=""
+    )
+
+
+
     def __str__(self):
         return f"{self.rank} - {self.percentage}%"

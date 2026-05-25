@@ -6,6 +6,7 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
 
 export default function HistoryChart({
@@ -23,6 +24,16 @@ export default function HistoryChart({
       ),
 
     }));
+
+  const average = (
+
+    chartData.reduce(
+      (sum, item) =>
+        sum + item.percentage,
+      0
+    ) / chartData.length
+
+  ).toFixed(1);
 
 
   return (
@@ -70,6 +81,13 @@ export default function HistoryChart({
             <YAxis />
 
             <Tooltip />
+
+            <ReferenceLine
+              y={average}
+              stroke="#22c55e"
+              strokeDasharray="5 5"
+              label={`平均 ${average}%`}
+            />
 
             <Line
               type="monotone"
