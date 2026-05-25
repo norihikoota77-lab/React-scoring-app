@@ -269,6 +269,10 @@ export default function App() {
 
                   </p>
 
+                  <ResultTable
+                    rowsData={selectedHistory.rows_data}
+                  />
+
                 </div>
 
               )}

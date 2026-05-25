@@ -242,6 +242,7 @@ def score_api(request):
             percentage=engine.percentage,
             rank=engine.get_rank(),
             message=msg,
+            rows_data=engine.rows_data,
         ) 
 
         # スコアに応じた動画フォルダ
@@ -326,7 +327,7 @@ def history_api(request):
             "percentage": history.percentage,
             "rank": history.rank,
             "message": history.message,
-            "rows_data": [],
+            "rows_data": history.rows_data,
             "created_at": history.created_at.strftime("%Y-%m-%d %H:%M"),
         })
 
