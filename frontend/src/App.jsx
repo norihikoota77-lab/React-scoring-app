@@ -14,6 +14,7 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [histories, setHistories] = useState([]);
   const [selectedUser, setSelectedUser] = useState("ALL");
+  const [selectedExam, setSelectedExam] = useState("ALL"); // ★追加
   const [selectedHistory, setSelectedHistory] = useState(null);
 
   const fetchHistories = async () => {
@@ -61,8 +62,15 @@ export default function App() {
       const text = await response.text();
       console.log(text);
       const data = JSON.parse(text);
+
+      // ★ エラーチェック追加
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+
       setResult(data);
-      fetchHistories();
+      await fetchHistories();
       setCorrectFile(null);
       setUserFile(null);
     } catch (error) {
@@ -78,10 +86,16 @@ export default function App() {
     ...new Set(histories.map((h) => h.user_name)),
   ];
 
-  const filteredHistories =
-    selectedUser === "ALL"
-      ? histories
-      : histories.filter((h) => h.user_name === selectedUser);
+  // ★ 試験名リスト
+  const exams = [
+    "ALL",
+    ...new Set(histories.map((h) => h.exam_title)),
+  ];
+
+  // ★ ユーザー＋試験名で絞り込み
+  const filteredHistories = histories
+    .filter((h) => selectedUser === "ALL" || h.user_name === selectedUser)
+    .filter((h) => selectedExam === "ALL" || h.exam_title === selectedExam);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-red-950 text-white">
@@ -150,46 +164,15 @@ export default function App() {
             {/* 4. 正答率推移 */}
             <div className="mt-8">
               <HistoryChart
-                histories={histories.filter((h) => h.user_name === result.user_name)}
+                histories={filteredHistories}
                 selectedUser={result.user_name}
               />
-            </div>
-
-            {/* 5. 採点履歴一覧 */}
-            <div className="mt-10">
-              <h2 className="text-3xl font-bold mb-6">採点履歴</h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                {filteredHistories.map((history) => (
-                  <div
-                    key={history.id}
-                    onClick={() => setSelectedHistory(history)}
-                    className="bg-white/10 border border-white/20 rounded-2xl p-5 backdrop-blur-lg hover:scale-105 hover:border-red-400 cursor-pointer transition duration-300"
-                  >
-                    <div className="flex justify-between mb-3">
-                      <p className="font-bold text-xl">{history.rank}</p>
-                      <p className="text-slate-300 text-sm">{history.created_at}</p>
-                    </div>
-                    <p className="text-2xl font-extrabold text-red-400 mb-2">
-                      {Number(history.percentage).toFixed(1)}%
-                    </p>
-                    <p className="text-xl font-bold text-red-300">{history.user_name}</p>
-                    <p className="text-slate-300 mb-2">{history.exam_title}</p>
-                    <p className="text-slate-200">{history.message}</p>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); deleteHistory(history.id); }}
-                      className="mt-4 bg-red-500 hover:bg-red-600 px-4 py-2 rounded-xl font-bold transition"
-                    >
-                      削除
-                    </button>
-                  </div>
-                ))}
-              </div>
             </div>
           </>
         )}
 
         {/* =========================
-              HISTORY AREA (採点前も常に表示)
+              HISTORY AREA
         ========================== */}
         <div className="mt-10">
           {selectedHistory && (
@@ -200,23 +183,37 @@ export default function App() {
               </p>
               <p className="text-xl">ランク：{selectedHistory.rank}</p>
               <p className="mt-4 text-slate-300">{selectedHistory.message}</p>
-
             </div>
           )}
 
-          <select
-            value={selectedUser}
-            onChange={(e) => setSelectedUser(e.target.value)}
-            className="mb-6 bg-slate-800 border border-white/20 px-4 py-3 rounded-xl"
-          >
-            {users.map((user) => (
-              <option key={user} value={user}>
-                {user}
-              </option>
-            ))}
-          </select>
+          {/* ★ フィルター：ユーザー＋試験名を横並び */}
+          <div className="flex gap-4 mb-6">
+            <select
+              value={selectedUser}
+              onChange={(e) => setSelectedUser(e.target.value)}
+              className="bg-slate-800 border border-white/20 px-4 py-3 rounded-xl"
+            >
+              {users.map((user) => (
+                <option key={user} value={user}>
+                  {user}
+                </option>
+              ))}
+            </select>
 
-          <h2 className="text-3xl font-bold mb-6 mt-10">採点履歴</h2>
+            <select
+              value={selectedExam}
+              onChange={(e) => setSelectedExam(e.target.value)}
+              className="bg-slate-800 border border-white/20 px-4 py-3 rounded-xl"
+            >
+              {exams.map((exam) => (
+                <option key={exam} value={exam}>
+                  {exam}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <h2 className="text-3xl font-bold mb-6 mt-4">採点履歴</h2>
 
           <a
             href="http://127.0.0.1:8000/api/history/export/"
