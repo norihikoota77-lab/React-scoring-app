@@ -11,3 +11,5 @@ media/
 reports/
 
 .DS_Store
+
+static/dist/

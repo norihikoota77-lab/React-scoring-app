@@ -7,4 +7,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  build: {
+    outDir: '../static/dist',  // Djangoのstaticフォルダに出力
+    emptyOutDir: true,
+  },
 })
