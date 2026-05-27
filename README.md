@@ -26,20 +26,24 @@ portfolio_kweb/
 ├── manage.py
 ├── requirements.txt
 ├── db.sqlite3
-├── keiba_app/          # Django アプリ
+├── data/                   # サンプルファイル
+│   ├── answer_key.xlsx     # 正解マスタサンプル
+│   └── sample.xlsx         # ユーザー解答サンプル
+├── keiba_app/              # Django アプリ
 │   ├── models.py
 │   ├── views.py
 │   ├── scoring_engine.py
 │   ├── urls.py
+│   ├── admin.py
 │   └── static/
-│       └── videos/     # 演出動画（excellent / good / try_again）
-├── frontend/           # React アプリ
+│       └── videos/         # 演出動画（excellent / good / try_again）
+├── frontend/               # React アプリ
 │   ├── src/
 │   │   ├── App.jsx
 │   │   └── components/
 │   ├── package.json
 │   └── vite.config.js
-└── static/             # collectstatic 出力先
+└── static/                 # collectstatic 出力先
 ```
 
 ---
@@ -66,6 +70,9 @@ pip install -r requirements.txt
 # DB マイグレーション
 python manage.py migrate
 
+# スーパーユーザー作成
+python manage.py createsuperuser
+
 # 開発サーバー起動
 python manage.py runserver
 ```
@@ -86,19 +93,47 @@ npm run dev
 
 ## 🚀 使い方
 
+### Excel ファイルの準備
+
+採点には以下の2つの Excel ファイルが必要です。
+サンプルファイルは `data/` フォルダに入っています。
+
+| ファイル          | 説明                                 |
+| ----------------- | ------------------------------------ |
+| `answer_key.xlsx` | 正解マスタ（試験名・正解を記入）     |
+| `sample.xlsx`     | ユーザー解答（受験者名・解答を記入） |
+
+#### Excel ファイルの仕様
+
+| セル   | 内容                                      |
+| ------ | ----------------------------------------- |
+| A13    | 試験名（正解マスタ・ユーザー解答共通）    |
+| A14    | 受験者名（ユーザー解答ファイルのみ）      |
+| 解答欄 | 問題番号・解答を4列ペアで記入（最大40問） |
+
+> 正解マスタとユーザー解答の試験名（A13）が異なる場合はエラーになります。
+
+### 採点手順
+
 1. ブラウザで `http://localhost:5173` を開く
-2. **解答マスター**（正解ファイル）をアップロード
-3. **ユーザー回答ファイル**をアップロード
+2. **正解マスタ**（`answer_key.xlsx`）をアップロード
+3. **ユーザー解答**（`sample.xlsx`）をアップロード
 4. **採点ボタン**を押す
 5. 採点結果・動画演出・正答率推移が表示される
 
-> 異なる試験の組み合わせでアップロードした場合はアラートでエラーを表示します。
+### 履歴管理
+
+- **ユーザーフィルター** — 受験者名で絞り込み
+- **試験名フィルター** — 試験名で絞り込み
+- **CSVダウンロード** — 採点履歴を CSV でエクスポート
+- **削除ボタン** — 不要な履歴を削除
 
 ---
 
 ## 📊 主な機能
 
 - **自動採点** — Excel ファイルを比較して正誤判定
+- **試験整合性チェック** — 異なる試験の組み合わせをアラートで検出
 - **ランク判定** — S / A / B / C の4段階
 - **動画演出** — スコアに応じた動画をランダム再生
 - **採点詳細** — 問題ごとの〇✖を2列レイアウトで表示
@@ -110,22 +145,15 @@ npm run dev
 
 ## 🔌 API エンドポイント
 
-| メソッド | URL                         | 説明             |
-| -------- | --------------------------- | ---------------- |
-| POST     | `/api/score/`               | 採点実行         |
-| GET      | `/api/history/`             | 履歴一覧取得     |
-| DELETE   | `/api/history/delete/<id>/` | 履歴削除         |
-| GET      | `/api/history/export/`      | CSV エクスポート |
-
----
-
-## 📝 Excel ファイル仕様
-
-| セル   | 内容                                      |
-| ------ | ----------------------------------------- |
-| A13    | 試験名                                    |
-| A14    | 受験者名（ユーザー回答ファイルのみ）      |
-| 解答欄 | 問題番号・解答を4列ペアで記入（最大40問） |
+| メソッド | URL                          | 説明             |
+| -------- | ---------------------------- | ---------------- |
+| POST     | `/api/score/`                | Excel採点実行    |
+| GET      | `/api/history/`              | 履歴一覧取得     |
+| DELETE   | `/api/history/delete/<id>/`  | 履歴削除         |
+| GET      | `/api/history/export/`       | CSV エクスポート |
+| GET      | `/api/exams/`                | 試験一覧取得     |
+| GET      | `/api/exams/<id>/questions/` | 問題一覧取得     |
+| POST     | `/api/exams/<id>/submit/`    | Web採点実行      |
 
 ---
 
